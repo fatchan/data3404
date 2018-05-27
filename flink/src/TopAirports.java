@@ -1,4 +1,4 @@
-import org.apache.flink.api.common.functions.FlatJoinFunction;
+import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -22,28 +22,26 @@ public class TopAirports {
 				//.readCsvFile("hdfs://127.0.0.1:9000/user/hadoop/ontimeperformance_flights_small.csv")
 				.readCsvFile("hdfs://127.0.0.1:9000/user/hadoop/ontimeperformance_flights_medium.csv")
 				.includeFields("00011").ignoreFirstLine().ignoreInvalidLines().types(String.class, String.class);
-		// Define a data set from the airports file , include the required fields for
-		// the task, in this case airport_code
-		DataSet<Tuple1<String>> airports = env
-				.readCsvFile("hdfs://127.0.0.1:9000/user/hadoop/ontimeperformance_airports.csv").includeFields("1")
-				.ignoreFirstLine().ignoreInvalidLines().types(String.class);
 
-		DataSet<Tuple1<String>> result = flights.join(airports).where(1).equalTo(0)// joining two data sets
-			.with(new JoinAF(year)); // using a new join function to create the tuple
+		DataSet<Tuple1<String>> result = flights.flatMap(new MapDate(year));
 		result
-			.groupBy(0)// group according to region name
-			.reduceGroup(new FCounter()).sortPartition(1, Order.DESCENDING).first(3).print();
+			.groupBy(0)
+			.reduceGroup(new FCounter())
+			.sortPartition(1, Order.DESCENDING)
+			.first(3)
+			.print();
 
 	}
 
-	public static class JoinAF implements FlatJoinFunction<Tuple2<String, String>, Tuple1<String>, Tuple1<String>> {
+	public static class MapDate implements FlatMapFunction<Tuple2<String, String>,Tuple1<String>> {
 		private final String year;
-		public JoinAF(String year2) {
+		public MapDate(String year2) {
 		    this.year = year2;
 		}
-		public void join(Tuple2<String, String> flights, Tuple1<String> airports, Collector<Tuple1<String>> out) throws Exception {
+		@Override
+		public void flatMap(Tuple2<String, String> flights, Collector<Tuple1<String>> out) throws Exception {
 			if (flights.f0.split("-")[0].equals(year)) {
-				out.collect(new Tuple1<String>(airports.f0));
+				out.collect(new Tuple1<String>(flights.f1));
 			}
 		}
 	}
