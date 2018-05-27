@@ -4,6 +4,7 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.util.Collector;
 import org.apache.flink.api.common.operators.Order;
@@ -17,11 +18,11 @@ public class TopAirports {
 
 		// Define a data set from the flights file , include the required fields for
 		// the task, in this case date and departure
-		DataSet<Tuple2<String, String>> flights = env
+		DataSet<Tuple3<String, String, String>> flights = env
 				//.readCsvFile("hdfs://127.0.0.1:9000/user/hadoop/ontimeperformance_flights_tiny.csv")
 				//.readCsvFile("hdfs://127.0.0.1:9000/user/hadoop/ontimeperformance_flights_small.csv")
 				.readCsvFile("hdfs://127.0.0.1:9000/user/hadoop/ontimeperformance_flights_medium.csv")
-				.includeFields("00011").ignoreFirstLine().ignoreInvalidLines().types(String.class, String.class);
+				.includeFields("0001100001").ignoreFirstLine().ignoreInvalidLines().types(String.class, String.class, String.class);
 
 		DataSet<Tuple1<String>> result = flights.flatMap(new MapDate(year));
 		result
@@ -33,14 +34,14 @@ public class TopAirports {
 
 	}
 
-	public static class MapDate implements FlatMapFunction<Tuple2<String, String>,Tuple1<String>> {
+	public static class MapDate implements FlatMapFunction<Tuple3<String, String, String>,Tuple1<String>> {
 		private final String year;
 		public MapDate(String year2) {
 		    this.year = year2;
 		}
 		@Override
-		public void flatMap(Tuple2<String, String> flights, Collector<Tuple1<String>> out) throws Exception {
-			if (flights.f0.split("-")[0].equals(year)) {
+		public void flatMap(Tuple3<String, String, String> flights, Collector<Tuple1<String>> out) throws Exception {
+			if (flights.f0.split("-")[0].equals(year) && !flights.f2.equals("")) {
 				out.collect(new Tuple1<String>(flights.f1));
 			}
 		}
