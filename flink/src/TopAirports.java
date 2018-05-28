@@ -1,3 +1,9 @@
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.Writer;
+import java.util.List;
+
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.java.DataSet;
@@ -25,12 +31,26 @@ public class TopAirports {
 				.includeFields("0001100001").ignoreFirstLine().ignoreInvalidLines().types(String.class, String.class, String.class);
 
 		DataSet<Tuple1<String>> result = flights.flatMap(new MapDate(year));
-		result
+		List<Tuple2<String,Integer>> results = result
 			.groupBy(0)
 			.reduceGroup(new FCounter())
 			.sortPartition(1, Order.DESCENDING)
 			.first(3)
-			.print();
+			.collect();
+		
+		try {
+            Writer output = null;
+            String path = "/home/hadoop/TopAirports_results.txt";
+            File file = new File(path);
+            output = new BufferedWriter(new FileWriter(file));
+            for (Tuple2<String, Integer> row : results) {
+            	output.write(row.f0+"\t"+row.f1+"\n");
+            }
+            output.close();
+            System.out.println("Wrote to file "+path);
+        } catch (Exception e) {
+            System.err.println(e);
+        }
 
 	}
 
