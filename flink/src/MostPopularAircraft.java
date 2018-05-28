@@ -13,6 +13,7 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.util.Collector;
 
 import org.apache.flink.api.common.operators.Order;
@@ -22,6 +23,10 @@ public class MostPopularAircraft {
 	
 	
 	public static void main(String[] args) throws Exception {
+		ParameterTool parameters = ParameterTool.fromArgs(args);
+		String size = parameters.get("size", "0");
+		String inpath = parameters.get("inpath", "0");
+		String outpath = parameters.get("outpath", "0");
 
 		// obtain an execution environment
 		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
@@ -29,18 +34,18 @@ public class MostPopularAircraft {
 		// Define a data set from the airlines file , include the required fields for
 		// the task, in this case carrier_code, airline name and country
 		DataSet<Tuple3<String, String, String>> airlines = env
-				.readCsvFile("hdfs://127.0.0.1:9000/user/hadoop/ontimeperformance_airlines.csv")
+				.readCsvFile(inpath+"ontimeperformance_airlines.csv")
 				.includeFields("111").ignoreFirstLine().ignoreInvalidLines().types(String.class, String.class, String.class);
 		// Define a data set from the FLIGHTS file , include the required fields for
 		// the task, in this case airport_code
 		DataSet<Tuple2<String, String>> flights = env
-				.readCsvFile("hdfs://127.0.0.1:9000/user/hadoop/ontimeperformance_flights_medium.csv").includeFields("010000100000")
+				.readCsvFile(inpath+"ontimeperformance_flights_"+size+".csv").includeFields("010000100000")
 				.ignoreFirstLine().ignoreInvalidLines().types(String.class, String.class);
 		
 		// define a datadet from the AIRCRAFTS file, include required fields for task
 		// in this case, 
 		DataSet<Tuple3<String, String, String>> aircraft = env
-				.readCsvFile("hdfs://127.0.0.1:9000/user/hadoop/ontimeperformance_aircrafts.csv").includeFields("101010000")
+				.readCsvFile(inpath+"ontimeperformance_aircrafts.csv").includeFields("101010000")
 				.ignoreFirstLine().ignoreInvalidLines().types(String.class, String.class, String.class);
 		DataSet<Tuple3<String, String, String>> USairlines = airlines.filter(new StringFilter());
 		DataSet<Tuple2<String, String>> Tailcodes = flights.filter(new tailcodeFilter());
@@ -60,7 +65,7 @@ public class MostPopularAircraft {
 
 		try {
             Writer output = null;
-            String path = "/home/hadoop/MostPopular_results.txt";
+            String path = outpath+"MostPopular_results_"+size+".txt";
             File file = new File(path);
             output = new BufferedWriter(new FileWriter(file));
             String airline = null;

@@ -19,15 +19,16 @@ public class TopAirports {
 	public static void main(String[] args) throws Exception {
 		ParameterTool parameters = ParameterTool.fromArgs(args);
 		String year = parameters.get("year", "0");
+		String size = parameters.get("size", "0");
+		String inpath = parameters.get("inpath", "0");
+		String outpath = parameters.get("outpath", "0");
 		// obtain an execution environment
 		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
 		// Define a data set from the flights file , include the required fields for
 		// the task, in this case date and departure
 		DataSet<Tuple3<String, String, String>> flights = env
-				//.readCsvFile("hdfs://127.0.0.1:9000/user/hadoop/ontimeperformance_flights_tiny.csv")
-				//.readCsvFile("hdfs://127.0.0.1:9000/user/hadoop/ontimeperformance_flights_small.csv")
-				.readCsvFile("hdfs://127.0.0.1:9000/user/hadoop/ontimeperformance_flights_medium.csv")
+				.readCsvFile(inpath+"ontimeperformance_flights_"+size+".csv")
 				.includeFields("0001100001").ignoreFirstLine().ignoreInvalidLines().types(String.class, String.class, String.class);
 
 		DataSet<Tuple1<String>> result = flights.flatMap(new MapDate(year));
@@ -40,7 +41,7 @@ public class TopAirports {
 		
 		try {
             Writer output = null;
-            String path = "/home/hadoop/TopAirports_results.txt";
+            String path = outpath+"TopAirports_results_"+size+".txt";
             File file = new File(path);
             output = new BufferedWriter(new FileWriter(file));
             for (Tuple2<String, Integer> row : results) {

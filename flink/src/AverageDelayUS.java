@@ -24,14 +24,17 @@ public class AverageDelayUS {
 	public static void main(String[] args) throws Exception {
 		ParameterTool parameters = ParameterTool.fromArgs(args);
 		String year = parameters.get("year", "0");
+		String size = parameters.get("size", "0");
+		String inpath = parameters.get("inpath", "0");
+		String outpath = parameters.get("outpath", "0");
 		// obtain an execution environment
 		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
-		DataSet<Tuple3<String, String, String>> airlines = env.readCsvFile("hdfs://127.0.0.1:9000/user/hadoop/ontimeperformance_airlines.csv")
+		DataSet<Tuple3<String, String, String>> airlines = env.readCsvFile(inpath+"ontimeperformance_airlines.csv")
 				.includeFields("111").ignoreFirstLine().ignoreInvalidLines().types(String.class, String.class, String.class);
 		DataSet<Tuple3<String, String, String>> airlinesFiltered = airlines.filter(new USCodes());
 				DataSet<Tuple6<String, String, String, String, String, String>> flights = env
-				.readCsvFile("hdfs://127.0.0.1:9000/user/hadoop/ontimeperformance_flights_medium.csv")
+				.readCsvFile(inpath+"ontimeperformance_flights_"+size+".csv")
 				.includeFields("01010001111").ignoreFirstLine().ignoreInvalidLines().types(String.class, String.class, String.class, String.class, String.class, String.class);
 		DataSet<Tuple6<String, String, String, String, String, String>> flightsFiltered = flights.filter(new dateFilter(year));
 		DataSet<Tuple2<String,Double>> joined = flightsFiltered.join(airlinesFiltered).where(0).equalTo(0).with(new joinAD());
@@ -39,12 +42,12 @@ public class AverageDelayUS {
 		List<Tuple2<String,Integer>> result = joined
 			.groupBy(0)
 			.reduceGroup(new DelayGrouper())
-			.sortPartition(1, Order.DESCENDING)
+			.sortPartition(0, Order.ASCENDING)
 			.collect();
 
 		try {
             Writer output = null;
-            String path = "/home/hadoop/AverageDelayUS_results.txt";
+            String path = outpath+"AverageDelayUS_results_"+size+".txt";
             File file = new File(path);
             output = new BufferedWriter(new FileWriter(file));
             for (Tuple2<String, Integer> row : result) {
