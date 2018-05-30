@@ -43,6 +43,7 @@ public class AverageDelayUS {
 			.groupBy(0)
 			.reduceGroup(new DelayGrouper())
 			.sortPartition(0, Order.ASCENDING)
+			.setParallelism(1)
 			.collect();
 
 		try {

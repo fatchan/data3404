@@ -36,6 +36,7 @@ public class TopAirports {
 			.groupBy(0)
 			.reduceGroup(new FCounter())
 			.sortPartition(1, Order.DESCENDING)
+			.setParallelism(1)
 			.first(3)
 			.collect();
 		

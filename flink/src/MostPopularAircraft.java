@@ -57,10 +57,11 @@ public class MostPopularAircraft {
 		
 		//airline, manufacturer+' '+model, count
 		List<Tuple3<String,String,Integer>> results = resultJoin2
-				.groupBy(0, 1, 2) 
+				.groupBy(0, 1, 2)
 				.reduceGroup(new PCounter())
-				.sortPartition(0, Order.DESCENDING)
+				.sortPartition(0, Order.ASCENDING)
 				.sortPartition(2, Order.DESCENDING)
+				.setParallelism(1)
 				.collect();
 
 		try {
