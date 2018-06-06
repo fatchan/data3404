@@ -17,6 +17,7 @@ import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.util.Collector;
 
 import org.apache.flink.api.common.operators.Order;
+import org.apache.flink.api.common.operators.base.JoinOperatorBase.JoinHint;
 
 
 public class MostPopularAircraft {
@@ -50,10 +51,11 @@ public class MostPopularAircraft {
 		DataSet<Tuple3<String, String, String>> USairlines = airlines.filter(new StringFilter());
 		DataSet<Tuple2<String, String>> Tailcodes = flights.filter(new tailcodeFilter());
 		// Join to data sets to create tuple data set with tail_numbers, airline name
+		// NOTE NO JOIN HINT ON THIS JOIN AS BOTH DATASETS ARE SMALL
 		DataSet<Tuple2<String,String>> resultJoin1 = USairlines.join(Tailcodes).where(0).equalTo(0)// joining two data sets
 																			.with(new JoinAlF()); // using a new join function to create the tuple
 		// need tuple 3 for airline name, manufacturer and model
-		DataSet<Tuple3<String, String, String>> resultJoin2 = resultJoin1.join(aircraft).where(1).equalTo(0).with(new JoinAR());
+		DataSet<Tuple3<String, String, String>> resultJoin2 = resultJoin1.join(aircraft, JoinHint.BROADCAST_HASH_FIRST).where(1).equalTo(0).with(new JoinAR());
 		
 		//airline, manufacturer+' '+model, count
 		List<Tuple3<String,String,Integer>> results = resultJoin2

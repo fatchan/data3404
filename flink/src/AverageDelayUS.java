@@ -19,6 +19,7 @@ import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.util.Collector;
 
 import org.apache.flink.api.common.operators.Order;
+import org.apache.flink.api.common.operators.base.JoinOperatorBase.JoinHint;
 
 public class AverageDelayUS {
 	public static void main(String[] args) throws Exception {
@@ -37,7 +38,8 @@ public class AverageDelayUS {
 				.readCsvFile(inpath+"ontimeperformance_flights_"+size+".csv")
 				.includeFields("01010001111").ignoreFirstLine().ignoreInvalidLines().types(String.class, String.class, String.class, String.class, String.class, String.class);
 		DataSet<Tuple6<String, String, String, String, String, String>> flightsFiltered = flights.filter(new dateFilter(year));
-		DataSet<Tuple2<String,Double>> joined = flightsFiltered.join(airlinesFiltered).where(0).equalTo(0).with(new joinAD());
+		// JOIN Hint for smaller dataset to be left joined first.
+		DataSet<Tuple2<String,Double>> joined = flightsFiltered.join(airlinesFiltered, JoinHint.BROADCAST_HASH_SECOND).where(0).equalTo(0).with(new joinAD());
 		
 		List<Tuple2<String,Integer>> result = joined
 			.groupBy(0)
